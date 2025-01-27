@@ -6,10 +6,20 @@
 #include <fcntl.h>
 
 
+/**
+ * @brief execute a command on the command line in the INCLUDEPATH using child processes
+ *        aand execvp
+ * 
+ * @param enteredCommand 
+ * @param infile 
+ * @param outfile 
+ * @return int 
+ */
 int executeCommand(char * const * enteredCommand, 
                     const char * infile, 
                     const char * outfile)
 {
+    //fork process, creates child process
     pid_t pid = fork();
 
     if (pid < 0)
@@ -21,6 +31,7 @@ int executeCommand(char * const * enteredCommand,
     if (!strcmp(infile, ""))
     { // case for outfile, since no infile
         int fd = open(outfile, O_WRONLY|O_CREAT|O_TRUNC, 0666);
+        //dup2 duplicate file descriptor, in this case stdout
         dup2(fd, STDOUT_FILENO);
 
         // form command
@@ -30,6 +41,7 @@ int executeCommand(char * const * enteredCommand,
 
         printf("%s", command);
 
+        //execute command
         int val = execvp(command,argv);
         if (val < 0)
         {
@@ -42,13 +54,14 @@ int executeCommand(char * const * enteredCommand,
     else if (!strcmp(outfile, ""))
     { // case for infile, since no outfile
         int fd = open(infile, O_RDONLY, 0666);
+        //dup2 to stdin
         dup2(fd, STDIN_FILENO);
 
         // form command
-
         const char* command = enteredCommand[0];
         char * const * argv = enteredCommand[1];
 
+        //execute command
         int val = execvp(command, argv);
         if (val < 0)
         {
@@ -62,6 +75,11 @@ int executeCommand(char * const * enteredCommand,
     return 0;
 }
 
+/**
+ * @brief implimentation of cd using chdir
+ * 
+ * @param path 
+ */
 void changeDirectories(const char * path)
 {
     int success = chdir(path);
@@ -80,7 +98,10 @@ void changeDirectories(const char * path)
     }
 }
 
-//
+/**
+ * @brief tokenize input into splitWords with strtok
+ * 
+ */
 int parseInput(char * input,
                 char splitWords[][500],
                 int maxWords)
