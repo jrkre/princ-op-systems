@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <stdlib.h>
 
 
 /**
@@ -22,50 +23,65 @@ int executeCommand(char * const * enteredCommand,
     //fork process, creates child process
     pid_t pid = fork();
 
+    //form command & args
+    const char* command = enteredCommand[0];
+    char * const * argv = &enteredCommand[1];
+
     if (pid < 0)
     {
-        printf("%s", "fork Produced an Error: ");
+        printf("%s\n", "fork Produced an Error: ");
         printf("%s", strerror(errno));
     }
 
-    if (!strcmp(infile, ""))
+    if (infile == NULL)
     { // case for outfile, since no infile
         int fd = open(outfile, O_WRONLY|O_CREAT|O_TRUNC, 0666);
         //dup2 duplicate file descriptor, in this case stdout
         dup2(fd, STDOUT_FILENO);
 
-        // form command
-
-        const char* command = enteredCommand[0];
-        char * const * argv = enteredCommand[1];
-
         printf("%s", command);
 
         //execute command
-        int val = execvp(command,argv);
+        int val = execvp(command, argv);
+
         if (val < 0)
         {
-            printf("%s", "execvp Produced an Error: ");
+            printf("%s\n", "execvp Produced an Error: ");
             printf("%s", strerror(errno));
             _exit(val);
             return 1;
         }
     }
-    else if (!strcmp(outfile, ""))
+    else if (outfile==NULL)
     { // case for infile, since no outfile
         int fd = open(infile, O_RDONLY, 0666);
         //dup2 to stdin
         dup2(fd, STDIN_FILENO);
 
-        // form command
-        const char* command = enteredCommand[0];
-        char * const * argv = enteredCommand[1];
+        //execute command
+        int val = execvp(command, argv);
+
+        if (val < 0)
+        {
+            printf("%s\n", "execvp Produced an Error: ");
+            printf("%s", strerror(errno));
+            _exit(val);
+            return 1;
+        }
+    }
+    else 
+    {
+        // since there is no infile/outfile, this shouldnt be neccessary
+        // int fd = open(infile, O_RDONLY, 0666);
+        // //dup2 to stdin
+        // dup2(fd, STDIN_FILENO);
 
         //execute command
         int val = execvp(command, argv);
+
         if (val < 0)
         {
-            printf("%s", "execvp Produced an Error: ");
+            printf("%s\n", "execvp Produced an Error: ");
             printf("%s", strerror(errno));
             _exit(val);
             return 1;
@@ -129,6 +145,9 @@ int main(int argc, char **argv)
     char netid [] = "joshuaknight";
 
     //char cwd [] = "~";
+
+    int arg_list_len = 100;
+    int arg_len = 500;
     
     //testing parseInput()
     char words[100][500] = {0};
@@ -149,13 +168,13 @@ int main(int argc, char **argv)
         char input[100] = {0};
         
         // construct preamble w/ color flare UwU
-        char preamble[500] = "\033[35;1m"; //pink username
+        char preamble[100] = "\033[35;1m"; //pink username
         strcat(preamble, netid);
         strcat(preamble, "\033[0;37m:\033[0;36m");
 
-        char filepath[500];
+        char filepath[100];
 
-        if (getcwd(filepath,500) == NULL)
+        if (getcwd(filepath, arg_len) == NULL)
         {
             printf("%s", "Issue finding cwd");
         }
@@ -167,9 +186,9 @@ int main(int argc, char **argv)
         printf("%s", preamble);
 
         // grab input 
-        fgets(input, 100, stdin);
+        fgets(input, arg_list_len, stdin);
 
-        parseInput(input, words, 100);
+        int token_count = parseInput(input, words, arg_list_len);
         // printf("%s", input);
         if (!strcmp(words[0], "exit\n"))
         {
@@ -193,20 +212,44 @@ int main(int argc, char **argv)
         }
         else 
         {
+            char ** ptr = (char**) malloc(token_count * sizeof(char*));
+
+            ptr[0] = malloc(arg_len * sizeof(char));
+
+            for (int i = 0; i < token_count; i ++)
+            {
+                printf("%s\n", words[i]);
+                if (!strcmp(words[i], ""))
+                {
+
+                    *ptr[i] = *words[i];
+                }
+            }
+
+            printf("%s\n", "here");
 
             //TODO: this needs work https://drive.google.com/file/d/1dB95Sc3mq-JWOppqj0LvD9VZQG8sPNFg/view
-            // for (int i = 0; i < 100; i ++)
-            // {
-            //     const char * nullers = ""; 
-            //     if (*words[i] == '>')
-            //     {
-            //         int executeCommand(words, nullers, words[i+1]);
-            //     }
-            //     else if (*words[i] == '<')
-            //     {
-            //         executeCommand(words, words[i-1], nullers);
-            //     }
-            // }
+            for (int i = 0; i < token_count; i ++)
+            {
+                //const char * nullers = ""; 
+                if (*words[i] == '>')
+                {
+                    char outfile [100];
+                    strcpy(outfile, words[i+1]);
+                    executeCommand(ptr, NULL, outfile);
+                }
+                else if (*words[i] == '<')
+                {
+                    char infile [100];
+                    strcpy(infile, words[i+1]);
+                    executeCommand(ptr, infile, NULL);
+                }
+                else
+                {
+                    executeCommand(ptr, NULL, NULL);
+                }
+            }
+            free(ptr);
         }
 
 
