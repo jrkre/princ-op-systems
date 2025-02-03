@@ -3,7 +3,7 @@
 CXX = gcc
 CFLAGS = -Wall -g
 
-TARGET = hw1 #exec
+TARGET = simpleshell #exec
 HEADERS =  #include
 SRCS = simpleshell.c #src
 

@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <fcntl.h>
 #include <stdlib.h>
 
@@ -23,72 +24,98 @@ int executeCommand(char * const * enteredCommand,
     //fork process, creates child process
     pid_t pid = fork();
 
-    //form command & args
-    const char* command = enteredCommand[0];
-    char * const * argv = &enteredCommand[1];
 
-    if (pid < 0)
+    if (pid == 0) //child process
     {
-        printf("%s\n", "fork Produced an Error: ");
-        printf("%s", strerror(errno));
-    }
+        //form command & args
+        const char* command = enteredCommand[0];
+        char * const * argv = &enteredCommand[0];
 
-    if (infile == NULL)
-    { // case for outfile, since no infile
-        int fd = open(outfile, O_WRONLY|O_CREAT|O_TRUNC, 0666);
-        //dup2 duplicate file descriptor, in this case stdout
-        dup2(fd, STDOUT_FILENO);
-
-        printf("%s", command);
-
-        //execute command
-        int val = execvp(command, argv);
-
-        if (val < 0)
+        if (pid < 0)
         {
-            printf("%s\n", "execvp Produced an Error: ");
+            printf("%s\n", "fork Produced an Error: ");
             printf("%s", strerror(errno));
-            _exit(val);
-            return 1;
         }
-    }
-    else if (outfile==NULL)
-    { // case for infile, since no outfile
-        int fd = open(infile, O_RDONLY, 0666);
-        //dup2 to stdin
-        dup2(fd, STDIN_FILENO);
 
-        //execute command
-        int val = execvp(command, argv);
+        if (infile == NULL && outfile != NULL)
+        { // case for outfile, since no infile, redirect to file provided
+            printf("%s\n", "OUTFILE");
 
-        if (val < 0)
+            int fd = open(outfile, O_WRONLY|O_CREAT|O_TRUNC, 0666);
+            //dup2 duplicate file descriptor, in this case stdout
+            int dup_return = dup2(fd, STDOUT_FILENO);
+
+            if (dup_return < 0)
+            {
+                printf("%s\n", "dup2 Produced an Error: ");
+                printf("%s", strerror(errno));
+                return 1;
+            }
+            // printf("%s", command);
+
+            //execute command
+            int val = execvp(command, argv);
+
+            if (val < 0)
+            {
+                printf("%s\n", "execvp Produced an Error: ");
+                printf("%s\n", strerror(errno));
+                _exit(val);
+                return 1;
+            }
+        }
+        else if (outfile == NULL && infile != NULL)
+        { // case for infile, since no outfile
+            printf("%s\n", "INFILE");
+            int fd = open(infile, O_RDONLY, 0666);
+            //dup2 to stdin
+            int dup_return = dup2(fd, STDIN_FILENO);
+            
+            if (dup_return < 0)
+            {
+                printf("%s\n", "dup2 Produced an Error: ");
+                printf("%s\n", strerror(errno));
+                return 1;
+            }
+
+            //execute command
+            int val = execvp(command, argv);
+
+            if (val < 0)
+            {
+                printf("%s\n", "execvp Produced an Error: ");
+                printf("%s\n", strerror(errno));
+                return 1;
+            }
+            _exit(val);
+        }
+        else 
         {
-            printf("%s\n", "execvp Produced an Error: ");
-            printf("%s", strerror(errno));
+            // since there is no infile/outfile, im pretty sure this shouldnt be neccessary
+            // int fd = open(infile, O_RDONLY, 0666);
+            // //dup2 to stdin
+            // dup2(fd, STDIN_FILENO);
+
+            //execute command
+            int val = execvp(command, argv);
+
+            if (val < 0)
+            {
+                printf("%s\n", "execvp Produced an Error: ");
+                printf("%s", strerror(errno));
+                return 1;
+            }
             _exit(val);
-            return 1;
         }
+
+        return 0;
     }
     else 
     {
-        // since there is no infile/outfile, this shouldnt be neccessary
-        // int fd = open(infile, O_RDONLY, 0666);
-        // //dup2 to stdin
-        // dup2(fd, STDIN_FILENO);
-
-        //execute command
-        int val = execvp(command, argv);
-
-        if (val < 0)
-        {
-            printf("%s\n", "execvp Produced an Error: ");
-            printf("%s", strerror(errno));
-            _exit(val);
-            return 1;
-        }
+        wait(NULL);
     }
-
     return 0;
+    
 }
 
 /**
@@ -98,7 +125,19 @@ int executeCommand(char * const * enteredCommand,
  */
 void changeDirectories(const char * path)
 {
-    int success = chdir(path);
+    int success;
+    if (0 == strcmp(path, "~"))
+    {
+        const char * new_path = getenv("HOME");
+
+        success = chdir(new_path);
+
+    }
+    else 
+    {
+        success = chdir(path);
+    }
+
     if (success == 0)
     {
         // printf("%s", path);
@@ -131,8 +170,10 @@ int parseInput(char * input,
     while(token != NULL && counter < maxWords)
     {
         // printf("%s\n", token);
+        token[strcspn(token, "\n")] = 0;
         strcpy(splitWords[counter], token);
         token = strtok(NULL, delimeter);
+
         counter++;
     }
 
@@ -142,7 +183,7 @@ int parseInput(char * input,
 int main(int argc, char **argv)
 {
 
-    char netid [] = "joshuaknight";
+    char* netid = "joshuaknight";
 
     //char cwd [] = "~";
 
@@ -150,7 +191,7 @@ int main(int argc, char **argv)
     int arg_len = 500;
     
     //testing parseInput()
-    char words[100][500] = {0};
+    
 
     // char word [] = "one two three four";
 
@@ -166,6 +207,8 @@ int main(int argc, char **argv)
     
     while (1) {
         char input[100] = {0};
+
+        char words[100][500];
         
         // construct preamble w/ color flare UwU
         char preamble[100] = "\033[35;1m"; //pink username
@@ -190,7 +233,7 @@ int main(int argc, char **argv)
 
         int token_count = parseInput(input, words, arg_list_len);
         // printf("%s", input);
-        if (!strcmp(words[0], "exit\n"))
+        if (!strcmp(words[0], "exit"))
         {
             return 0;
         }
@@ -205,28 +248,34 @@ int main(int argc, char **argv)
                 // strcat(filepath, words[1]);
 
                 // replace trailing \n from enter with \0 eof char
-                words[1][strlen(words[1]) - 1] = '\0';
+                // not needed anymore, taken care of in parseCommand - words[1][strlen(words[1]) - 1] = '\0';
                 changeDirectories(words[1]);
                 //strcpy(cwd, words[1]);
             }
         }
         else 
         {
-            char ** ptr = (char**) malloc(token_count * sizeof(char*));
+            char ** ptr = (char**) malloc((token_count + 1) * sizeof(char)); // +1 for null terminator
 
-            ptr[0] = malloc(arg_len * sizeof(char));
 
             for (int i = 0; i < token_count; i ++)
             {
-                printf("%s\n", words[i]);
-                if (!strcmp(words[i], ""))
-                {
-
-                    *ptr[i] = *words[i];
-                }
+                ptr[i] = (char *) malloc((arg_len + 1) * sizeof(char)); // +1 for null terminator
+                strcpy(ptr[i], words[i]);
             }
+            //ptr[token_count] = (char *) malloc(sizeof(char*));
 
-            printf("%s\n", "here");
+            ptr[token_count] = NULL; // null terminator
+
+            // printf("HEREEEE");
+
+
+            // for ( int i = 0; i <= token_count; i++)
+            // {
+            //     printf("%s%i\n", ptr[i], i);
+            // }
+
+            //printf("%s\n", "here");
 
             //TODO: this needs work https://drive.google.com/file/d/1dB95Sc3mq-JWOppqj0LvD9VZQG8sPNFg/view
             for (int i = 0; i < token_count; i ++)
@@ -236,12 +285,29 @@ int main(int argc, char **argv)
                 {
                     char outfile [100];
                     strcpy(outfile, words[i+1]);
+
+                    
+                    for (int j = i; j < token_count - 2; j++)
+                    {
+                        strcpy(words[j], words[j + 2]);
+                    }
+                    token_count -= 2;
+
+
                     executeCommand(ptr, NULL, outfile);
                 }
                 else if (*words[i] == '<')
                 {
                     char infile [100];
                     strcpy(infile, words[i+1]);
+
+                    for (int j = i; j < token_count - 2; j++)
+                    {
+                        // same for infile
+                        strcpy(words[j], words[j + 2]);
+                    }
+                    token_count -= 2;
+
                     executeCommand(ptr, infile, NULL);
                 }
                 else
@@ -249,7 +315,10 @@ int main(int argc, char **argv)
                     executeCommand(ptr, NULL, NULL);
                 }
             }
+            
+            
             free(ptr);
+
         }
 
 
