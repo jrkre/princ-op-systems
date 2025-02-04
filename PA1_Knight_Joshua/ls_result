@@ -1,0 +1,8 @@
+total 48
+drwxrwxr-x 2 parallels parallels  4096 Feb  3 19:26 .
+drwxrwxr-x 5 parallels parallels  4096 Jan 28 14:02 ..
+-rw-rw-r-- 1 parallels parallels     0 Feb  3 19:27 ls_result
+-rw-rw-r-- 1 parallels parallels   860 Feb  3 19:23 Makefile
+-rw-rw-r-- 1 parallels parallels    43 Feb  3 19:25 make_result
+-rwxrwxr-x 1 parallels parallels 19840 Feb  3 19:25 simpleshell
+-rw-rw-r-- 1 parallels parallels 10240 Feb  3 19:25 simpleshell.c

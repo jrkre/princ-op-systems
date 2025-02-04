@@ -8,9 +8,14 @@
 #include <stdlib.h>
 
 
+#define bool int
+#define true 1
+#define false 0
+
+
 /**
  * @brief execute a command on the command line in the INCLUDEPATH using child processes
- *        aand execvp
+ *        aand execvp-
  * 
  * @param enteredCommand 
  * @param infile 
@@ -24,6 +29,13 @@ int executeCommand(char * const * enteredCommand,
     //fork process, creates child process
     pid_t pid = fork();
 
+
+    // int i = 0;
+    // while (1)
+    // {
+    //     printf("%s\n", enteredCommand[i]);
+    //     i++;
+    // }
 
     if (pid == 0) //child process
     {
@@ -39,7 +51,8 @@ int executeCommand(char * const * enteredCommand,
 
         if (infile == NULL && outfile != NULL)
         { // case for outfile, since no infile, redirect to file provided
-            printf("%s\n", "OUTFILE");
+
+            // printf("%s\n", "OUTFILE");
 
             int fd = open(outfile, O_WRONLY|O_CREAT|O_TRUNC, 0666);
             //dup2 duplicate file descriptor, in this case stdout
@@ -51,14 +64,14 @@ int executeCommand(char * const * enteredCommand,
                 printf("%s", strerror(errno));
                 return 1;
             }
-            // printf("%s", command);
+            printf("%s", command);
 
             //execute command
             int val = execvp(command, argv);
 
             if (val < 0)
             {
-                printf("%s\n", "execvp Produced an Error: ");
+                printf("%s", "execvp Produced an Error: ");
                 printf("%s\n", strerror(errno));
                 _exit(val);
                 return 1;
@@ -66,7 +79,8 @@ int executeCommand(char * const * enteredCommand,
         }
         else if (outfile == NULL && infile != NULL)
         { // case for infile, since no outfile
-            printf("%s\n", "INFILE");
+
+            // printf("%s\n", "INFILE");
             int fd = open(infile, O_RDONLY, 0666);
             //dup2 to stdin
             int dup_return = dup2(fd, STDIN_FILENO);
@@ -91,7 +105,7 @@ int executeCommand(char * const * enteredCommand,
         }
         else 
         {
-            // since there is no infile/outfile, im pretty sure this shouldnt be neccessary
+            // since there is no infile/outfile, im pretty sure this piece of code shouldnt be neccessary
             // int fd = open(infile, O_RDONLY, 0666);
             // //dup2 to stdin
             // dup2(fd, STDIN_FILENO);
@@ -102,7 +116,7 @@ int executeCommand(char * const * enteredCommand,
             if (val < 0)
             {
                 printf("%s\n", "execvp Produced an Error: ");
-                printf("%s", strerror(errno));
+                printf("%s\n", strerror(errno));
                 return 1;
             }
             _exit(val);
@@ -206,7 +220,7 @@ int main(int argc, char **argv)
 
     
     while (1) {
-        char input[100] = {0};
+        char input[100];
 
         char words[100][500];
         
@@ -255,67 +269,129 @@ int main(int argc, char **argv)
         }
         else 
         {
-            char ** ptr = (char**) malloc((token_count + 1) * sizeof(char)); // +1 for null terminator
+            
+            bool hasInfile = false;
+            bool hasOutfile = false;
+            int redirect_index = -1; // -1 so we dont get a match unexpectedly
+            int size_modifier = 0;
+
+            //determine index of in/outfile in 'words', respond accordingly when malloc() happens
+            for (int i = 0; i < token_count; i ++)
+            {
+                if (*words[i] == '<')
+                {
+                    hasInfile = true;
+                    redirect_index = i;
+                    size_modifier = 2;// -2 args for >/< and filename 
+                }
+                else if (*words[i] == '>')
+                {
+                    hasOutfile = true;
+                    redirect_index = i;
+                    size_modifier = 2;
+                }
+            }
+
+            token_count -= size_modifier; // -2 if redirection is enabled
+            
+            // printf("%d\n",token_count);
+
+            char ** ptr = (char**) malloc((token_count + 1) * sizeof(char)); // +1 for null terminator.
 
 
             for (int i = 0; i < token_count; i ++)
             {
                 ptr[i] = (char *) malloc((arg_len + 1) * sizeof(char)); // +1 for null terminator
-                strcpy(ptr[i], words[i]);
+                
+                if (i != redirect_index)
+                {
+                    strcpy(ptr[i], words[i]);
+                }
+                else if (hasInfile || hasOutfile)
+                {
+                    //don't copy over redirection stuffs into arg list
+                }
             }
-            //ptr[token_count] = (char *) malloc(sizeof(char*));
 
             ptr[token_count] = NULL; // null terminator
 
-            // printf("HEREEEE");
-
-
-            // for ( int i = 0; i <= token_count; i++)
+            // for (int i = 0; i < token_count; i++)
             // {
-            //     printf("%s%i\n", ptr[i], i);
-            // }
+            //     printf("%s ", ptr[i]);
+            // } TESTING
 
-            //printf("%s\n", "here");
 
-            //TODO: this needs work https://drive.google.com/file/d/1dB95Sc3mq-JWOppqj0LvD9VZQG8sPNFg/view
-            for (int i = 0; i < token_count; i ++)
+            if (hasInfile)
             {
-                //const char * nullers = ""; 
-                if (*words[i] == '>')
-                {
-                    char outfile [100];
-                    strcpy(outfile, words[i+1]);
+                char infile [100];
+                strcpy(infile, words[redirect_index + 1]);
+
+                executeCommand(ptr, infile, NULL);
+            }
+            else if(hasOutfile)
+            {
+                char outfile [100];
+                strcpy(outfile, words[redirect_index + 1]);
+
+                executeCommand(ptr, NULL, outfile);
+            }
+            else
+            {
+                //printf("%s\n", "here");
+                executeCommand(ptr, NULL, NULL);
+            }
+
+
+            // this needs a bunch of work
+            //  -later: what was i thinking
+            // for (int i = 0; i < token_count; i ++)
+            // {
+            //     //const char * nullers = ""; 
+            //     if (*words[i] == '>')
+            //     {
+            //         char outfile [100];
+            //         strcpy(outfile, words[i+1]);
 
                     
-                    for (int j = i; j < token_count - 2; j++)
-                    {
-                        strcpy(words[j], words[j + 2]);
-                    }
-                    token_count -= 2;
+            //         for (int j = i; j < token_count - 2; j++)
+            //         {
+            //             strcpy(ptr[j], ptr[j + 2]);
+            //         }
+            //         token_count -= 2;
 
+            //         ptr[token_count] = NULL; // re-add null terminator
 
-                    executeCommand(ptr, NULL, outfile);
-                }
-                else if (*words[i] == '<')
-                {
-                    char infile [100];
-                    strcpy(infile, words[i+1]);
+            //         executeCommand(ptr, NULL, outfile);
+            //         break;
+            //     }
+            //     else if (*words[i] == '<')
+            //     {
+            //         char infile [100];
+            //         strcpy(infile, words[i+1]);
 
-                    for (int j = i; j < token_count - 2; j++)
-                    {
-                        // same for infile
-                        strcpy(words[j], words[j + 2]);
-                    }
-                    token_count -= 2;
+            //         for (int j = i; j < token_count - 2; j++)
+            //         {
+            //             // same for infile
+            //             strcpy(ptr[j], ptr[j + 2]);
+            //         }
+            //         token_count -= 2;
 
-                    executeCommand(ptr, infile, NULL);
-                }
-                else
-                {
-                    executeCommand(ptr, NULL, NULL);
-                }
-            }
+            //         ptr[token_count] = NULL; // re-add null terminator
+
+            //         executeCommand(ptr, infile, NULL);
+            //         break;
+            //     }
+            //     else
+            //     {
+            //         executeCommand(ptr, NULL, NULL);
+            //         break;
+            //     }
+            // }
             
+            for (int i = 0; i < token_count; i ++)
+            {
+                free(ptr[i]);
+            }
             
             free(ptr);
 
