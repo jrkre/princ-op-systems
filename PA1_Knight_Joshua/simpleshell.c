@@ -253,9 +253,9 @@ int main(int argc, char **argv)
         }
         else if (!strcmp(words[0], "cd"))
         {
-            if (strcmp(words[2], ""))
+            if (token_count == 1)
             {
-                printf("%s", "\033[31mPath Not Formatted Correctly!\033[0m");
+                printf("%s\n", "\033[31mPath Not Formatted Correctly!\033[0m");
             }
             else
             {
