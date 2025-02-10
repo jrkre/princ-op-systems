@@ -5,27 +5,20 @@ Run your code with a different combination of:
     i) amount of values (e.g. 1000 1,000,000 …)
     ii) requested Threads for each amount (1 2 4 8 16 …)
         and answer the following questions:
-        
+
 a) What are your observations?
 
-    As thread count increases for smaller inputs (1000), the time it takes to complete is not necessarily faster, and in cases past 1-2 threads,
-    the time it takes to complete increases as threads increase.
+    As thread count increases for smaller inputs (1000), the time it takes to complete is not necessarily faster, and in cases past 1-2 threads, the time it takes to complete increases as threads increase.
 
-    For larger sets of numbers (1000000), as thread count increases, the time it takes decreases. Like with smaller files, once the thread count 
-    gets too high (around __ threads), the time begins to increase once again. 
+    For larger sets of numbers (1000000), as thread count increases, the time it takes decreases. Like with smaller files, once the thread count gets too high (around __ threads), the time it takes to calucate the sum begins to increase once again. 
 
 b) Do you find the observed behavior reasonable? Why / Why not?
 
-    The behavior is reasonable because, as stated in class and in the book, the processing time to create a new thread and manage a mutex is an 
-    expensive operation. It follows that there would be an inflection point (calculations per thread, or threads per # of integers) that would 
-    be ideal for a given dataset. If creating threads was free, it would be reasonable that more threads==more faster, but that is not the case 
-    because the operations to make and manage threads are computationally expensive. 
+    The behavior is reasonable because, as stated in class and in the book, the processing time to create a new thread and manage a mutex is an expensive operation. It follows that there would be an inflection point (calculations per thread, or threads per # of integers) that would be ideal for a given dataset. If creating threads was free, it would be reasonable that more threads==more faster, but that is not the case because the operations to make and manage threads are computationally expensive. 
 
 c) What kind of considerations did you make for your implementation of the Critical Section? Provide
 reasoning / justification.
-    My main consideration was seperating the computationally expensive task of adding the individual numbers in that 'slice' of the array and 
-    the less expensive task of adding that slice's sum to the total. Since the 'critical section' could be atomized to just adding of that thread's
-    contribution to the total, that was all I put in there to reduce the time spent on the CPU.
+    My main consideration was seperating the computationally expensive task of adding the individual numbers in that 'slice' of the array and the less expensive task of adding that slice's sum to the total. Since the 'critical section' could be atomized to just adding of that thread's  contribution to the total, that was all I put in there to reduce the time spent on the CPU.
 
 
 [EXTRA] What do you think would happen if instead of having the Threads loop over the int
@@ -33,12 +26,7 @@ array to compute a local arraySum, and finally update the totalSum, we were inst
 adding to totalSum each time we were accessing an array element within each Thread (i.e. within
 the Thread’s for loop)? Why?
 
-    In an implementation where we were iterating over the totalSum, the program would not be especially multithreaded, or it would be siginificantly
-    error - prone. If we were using locks in the loop, the program would be very slow because it has to context-switch every iteration of the loop, 
-    but maybe it would retain it's accuracy. However if there were no locks in the loop and multiple threads were accessing totalSum at the same time,
-    the program would compute an incorrect value for totalSum, since one thread could add it's number, and if a context-switch hapened before the 
-    memory was updated and another value was added to totalSum, the second value would be the only one stored into memory. This effectively allows 
-    the threads to 'trample' over eachother's calculations.
+    In an implementation where we were iterating over the totalSum, the program would not be especially multithreaded, or it would be siginificantly more error-prone. If we were using locks in the loop, the program would be very slow since the CPU has to context-switch every iteration of the loop, but maybe it would retain it's accuracy. However if there were no locks in the loop and multiple threads were accessing totalSum at the same time, the program would compute an incorrect value for totalSum, since one thread could add it's number, and if a context-switch hapened before the memory was updated and another value was added to totalSum, the second value would be the only one stored into memory. This effectively allows the threads to 'trample' over eachother's calculations.
     
     The reason each thread calculates its own total and then adds it at the end is twofold:
         1. so the calculations are correct, and the threads are not trampling over eachother,
