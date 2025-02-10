@@ -52,7 +52,8 @@ void* arraySum(void* void_data)
         threadSum += data->data[i];
     }
     
-    printf("%lld start: %d end: %d\n", threadSum, data->startInd, data->endInd);
+
+    printf("sum: %lld start: %d end: %d\n", threadSum, data->startInd, data->endInd);
     pthread_mutex_lock(data->lock);
     data->totalSum += threadSum;
     pthread_mutex_unlock(data->lock);
