@@ -23,13 +23,15 @@ int readFile(char filename [], int values_array [])
     }
     // printf("%s\n", "reading file...");
 
-    int num_vals;
-    int i;
-    while (!feof(file))
+    int num_vals = 0;
+    int i = 0;
+    while (!feof(file) && i < 10000000)
     {
         num_vals += fscanf(file, "%d", &values_array[i]);
         i++;
     }
+
+    fclose(file);
 
 
     // printf("numvals: %d\n", num_vals);
@@ -40,7 +42,7 @@ int readFile(char filename [], int values_array [])
 void* arraySum(void* void_data)
 {
 
-    printf("%s\n", "arraysum");
+    // printf("%s\n", "arraysum");
     //takes its given (void* thread_data), breaks it down into given indeces, and sums the results into totalSum
 
     thread_data_t * data = (thread_data_t*) void_data;
@@ -52,10 +54,9 @@ void* arraySum(void* void_data)
         threadSum += data->data[i];
     }
     
-
-    printf("sum: %lld start: %d end: %d\n", threadSum, data->startInd, data->endInd);
+    // printf("%lld start: %d end: %d\n", threadSum, data->startInd, data->endInd);
     pthread_mutex_lock(data->lock);
-    data->totalSum += threadSum;
+    *data->totalSum += threadSum;
     pthread_mutex_unlock(data->lock);
 
     return data->totalSum;
@@ -77,9 +78,13 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    int vals [100000];
+    int * vals = (int*) malloc(10000000 * sizeof(int));
 
-    int ints_read = readFile(argv[1], vals);
+    char * filename = argv[1];
+    
+    // printf("%s\n", filename);
+
+    int ints_read = readFile(filename, vals);
 
     int thread_count = atoi(argv[2]);
 
@@ -90,12 +95,12 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    long long int totalSum;
+    long long int totalSum = 0;
 
 
-    struct timeval * start_time = (struct timeval*) {0};
+    struct timeval start_time = (struct timeval) {0};
 
-    if (gettimeofday(start_time, NULL) != 0)
+    if (gettimeofday(&start_time, NULL) != 0)
     {
         printf("%s\n","Error: failed to get time of day");
     }
@@ -103,6 +108,8 @@ int main(int argc, char* argv[])
     pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
     pthread_mutex_init(&mutex, NULL);
+
+    // make array of pthread_arg_t structs, based on argv[2] and ints_read
 
     thread_data_t * thread_data_array = (thread_data_t*) malloc(thread_count * sizeof(thread_data_t));
 
@@ -116,7 +123,15 @@ int main(int argc, char* argv[])
     {
         // int_per_thr * thread_count == ints_read
         thread_data_array[i].startInd = ints_per_thread * i;
-        thread_data_array[i].endInd = (ints_per_thread * (i + 1) - 1);
+        if (i == thread_count - 1) 
+        {
+            thread_data_array[i].endInd = ints_read; 
+        } 
+        else 
+        {
+            thread_data_array[i].endInd = ints_per_thread * (i + 1);
+        }
+
         thread_data_array[i].data = vals;
         
         thread_data_array[i].lock = &mutex;
@@ -124,41 +139,44 @@ int main(int argc, char* argv[])
 
     }
 
+    // make array of pthreads
     pthread_t * threads = malloc(thread_count * sizeof(pthread_t));
 
-    printf("%s\n", "pthread_create");
+    // printf("%s\n", "pthread_create");
 
     
+    // call pthread_create on all of the pthread
     for(int i = 0; i < thread_count; i++)
     {
         pthread_create(&threads[i], NULL, arraySum, &thread_data_array[i]);
     }
 
-    printf("%s\n", "pthread_join");
+    // printf("%s\n", "pthread_join");
 
+    // call pthread_join on all of the pthreads
     for(int i = 0; i < thread_count; i++)
     {
         pthread_join(threads[i], NULL);
     }
 
-    printf("%s\n", "calculate sum and time values");
+    // printf("%s\n", "calculate sum and time values");
 
 
     totalSum = *thread_data_array[0].totalSum;
 
-    struct timeval *end_time = (struct timeval*) {0};
+    struct timeval end_time = (struct timeval) {0};
 
-    printf("shouldnt be here \n");
 
-    if (gettimeofday(end_time, NULL) != 0)
+    if (gettimeofday(&end_time, NULL) != 0)
     {
         printf("%s\n", "Error: failed to get time of day");
     }
 
 
-    suseconds_t total_time_ms = (end_time->tv_usec - start_time->tv_usec) * 1000;
+    suseconds_t total_time_ms = (end_time.tv_usec - start_time.tv_usec) * 1000;
 
 
+    //return/print results
     printf("Total Time: %ld\n", total_time_ms);
     printf("Total Sum: %lld\n", totalSum);
 
@@ -167,14 +185,4 @@ int main(int argc, char* argv[])
 
     return 0;
 
-
-    // make thread_data_array of pthreads
-
-    // make thread_data_array of pthread_arg_t structs, based on argv[2] and ints_read
-
-    // call pthread_create on all of the pthreads
-
-    // pthread_join on created threads
-
-    //return/print results
 }
