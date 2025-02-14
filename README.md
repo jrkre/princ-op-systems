@@ -1,5 +1,5 @@
 # Principles of Operating Systems - UNR CS 446
-### Christos Papachristos
+## Administered by Professor Christos Papachristos
 
 This holds the course content for CS 446, I have been working mostly in advance for this course, since all of the assignments have been posted prior to taking the class.
 
