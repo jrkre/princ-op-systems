@@ -15,8 +15,6 @@ typedef struct _thread_data_t {
 
 void* arraySum(void* void_data)
 {
-
-    // printf("%s\n", "arraysum");
     //takes its given (void* thread_data), breaks it down into given indeces, and sums the results into totalSum
 
     thread_data_t * data = (thread_data_t*) void_data;
