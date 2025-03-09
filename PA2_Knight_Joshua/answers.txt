@@ -30,5 +30,4 @@ the Thread’s for loop)? Why?
     
     The reason each thread calculates its own total and then adds it at the end is twofold:
         1. so the calculations are correct, and the threads are not trampling over eachother,
-        2. and so the threads each are able to 'go off' and do work on their own, and then add their results to totalSum at the end of the 
-        computation. 
+        2. and so the threads each are able to 'go off' and do work on their own, and then add their results to totalSum at the end of the computation. 
