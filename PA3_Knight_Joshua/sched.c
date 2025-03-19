@@ -34,6 +34,7 @@ void* arraySum(void* void_data)
     while(1)
     {
         long latency_max = 0;
+        
         for (int i = 0; i < data->numVals; i++)
         {
             struct timespec start, end;
@@ -49,6 +50,7 @@ void* arraySum(void* void_data)
                 latency_max = latency;
             }
         }
+        
         
         // printf("%lld start: %d end: %d\n", threadSum, data->startInd, data->endInd);
         pthread_mutex_lock(data->lock);

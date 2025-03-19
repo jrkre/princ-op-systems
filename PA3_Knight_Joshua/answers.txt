@@ -1,15 +1,14 @@
-1) Run the program with an amount of Threads as many as the number of CPUs of your system (if you don’t know you can use the nproc --all command in your terminal, or in C use the System Call sysconf(_SC_NPROCESSORS_ONLN);. 
+1) Run the program with an amount of Threads as many as the number of CPUs of your system (if you don’t know you can use the nproc --all command in your terminal, or in C use the System Call sysconf(_SC_NPROCESSORS_ONLN); ). 
 Write your observations
 
+After starting the program with 16 threads, the program fully utilizes the CPU, and the per-thread latency varies considerably from cycle to cycle, from 10000 ns to 500000 ns (see proc-1.png & util-1.png).
 
 
-
-2) Run the program again with the same amount of Threads. Open a different terminal and issue the command: watch -n.5 grep ctxt /proc/<pid>/status This allows you to see the number of Context Switches (voluntary and involuntary) that a Task with PID <pid> has undergone so far, and get an update of it every 0.5 seconds. You can find the PID of a specific task through pstree -p, or more easily by the running sched.c which should now be printing out the PID of each thread alongside each progress
-bar.
+2) Run the program again with the same amount of Threads. Open a different terminal and issue the command: watch -n.5 grep ctxt /proc/<pid>/status This allows you to see the number of Context Switches (voluntary and involuntary) that a Task with PID <pid> has undergone so far, and get an update of it every 0.5 seconds. You can find the PID of a specific task through pstree -p, or more easily by the running sched.c which should now be printing out the PID of each thread alongside each progress bar. 
 Now (as you are observing the Context Switches of a specific Thread), switch its Scheduling Policy to a Real-Time one. Try both Policies, and 1-2 different Priority Levels.
 Write the sequence of commands you used for this question, and your observations.
 
-
+After less than 30 seconds, the context switches skyrockets up to over 12000, and grows by up to 300 per refresh. 
 
 
 3) Run the program again with the same amount of Threads. Create a system cpuset with all CPUs except 1 (as described in Method b) in the section about Linux Multi-Processor Control) and move all Tasks (all User-Level and Kernel-Level ones that are possible to move) into that set. Create a dedicated cpuset with only the CPU that is excluded from the system one.
