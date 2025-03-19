@@ -1,7 +1,7 @@
 #This is variant of a boilerplate Makefile I've used for years to compile C projects for class pls dont kill me
 
 CXX = gcc
-CFLAGS = -Wall -g
+CFLAGS = -Wall -g -pthread
 
 TARGET = sched #exec
 HEADERS =  #include

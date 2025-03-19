@@ -1,6 +1,7 @@
 1) Run the program with an amount of Threads as many as the number of CPUs of your system (if you don’t know you can use the nproc --all command in your terminal, or in C use the System Call sysconf(_SC_NPROCESSORS_ONLN); ). 
 Write your observations
 
+
 After starting the program with 16 threads, the program fully utilizes the CPU, and the per-thread latency varies considerably from cycle to cycle, from 10000 ns to 500000 ns (see proc-1.png & util-1.png).
 
 
@@ -8,15 +9,34 @@ After starting the program with 16 threads, the program fully utilizes the CPU, 
 Now (as you are observing the Context Switches of a specific Thread), switch its Scheduling Policy to a Real-Time one. Try both Policies, and 1-2 different Priority Levels.
 Write the sequence of commands you used for this question, and your observations.
 
-After less than 30 seconds, the context switches skyrockets up to over 12000, and grows by up to 300 per refresh. 
+ - watch -n.5 grep ctxt /proc/19173/status
+
+After less than 30 seconds, the context switches skyrocket to over 10000, and grows by up to 300 per refresh. 
+
+ - sudo chrt -p -r 1 19173
+
+With a real-time scheduler (RR priority 1), the context switches reduce to about ~2 per refresh. This is alongside a latency reduction to sub-5000 ns. Every few seconds, however the thread will jump to >100000 ns. 
+
+ - sudo chrt -p -r 10 19173
+
+When I changed the priority to 10, the context switches reduced to ~1 per refresh.  After the priority change, the latency on the thread jumps around all over the place sub 10000 ns (see proc-2.png - The user/hostname changed because I had to change OS's. 22.04 seemed to have issues with cpuset and chrt). This is combined with a spike in latency every second or so. 
+
+ - sudo chrt -p -f 1 19173
+
+The context switches after this command seemed to go down even more than after RR. Thread latency seems fairly inconsistent, but still under 10-15000 ns. The frequency of the thread's latency spiking became more random, and the latency in the spike was >500000 ns. Much more than before. 
 
 
 3) Run the program again with the same amount of Threads. Create a system cpuset with all CPUs except 1 (as described in Method b) in the section about Linux Multi-Processor Control) and move all Tasks (all User-Level and Kernel-Level ones that are possible to move) into that set. Create a dedicated cpuset with only the CPU that is excluded from the system one.
-
 Move one of the Threads of sched.c to the dedicated cpuset.
-
 Write the sequence of commands you used for this question, and your observations.
 
+ - sudo cset set -c 0-14 system
+ - sudo cset set -c 15 dedicated
+ - sudo cset proc -m -f root -t system
+ - sudo cset proc -k -f root -t system
+ - sudo cset proc -m -p 394419 -t dedicated
+
+After moving the first thread to the dedicated CPU, the latency completely stabilized between 8000 - 15000 ns (see proc-4.png). The context switches rise at about 100 per refresh. 
 
 
 4) While 3) is still executing with one Thread on the dedicated cpuset, observe the Context
@@ -24,3 +44,15 @@ Switches of that Thread with:
 watch -n.5 grep ctxt /proc/<pid>/status
 and then change its Scheduling Policy to a Real-Time one at 1-2 Priority Levels.
 Write the sequence of commands you used for this question, and your observations.
+
+ - watch -n.5 grep ctxt /proc/394419/status
+
+After changing to the dedicated CPU, t1he context switches rise at about 100 per refresh. 
+
+ - sudo chrt -p -r 1 397018
+
+After changing to a round-robin scheduling policy, the latency drops again (this time around 3000 ns with a spike every 3 seconds or so), and now the CPU utilization is slightly lowered (see util-2.png). The context switches dropped to a constant rate, as expected.
+
+ - sudo chrt -p -r 10 397018
+
+The thread's latency oscillates from 2000 ns up to 10000 ns, with occasional spikes, as expected. The CPU utilization on the core has changed to an oscillation (every 5 seconds or so) from 93% to 96%. Context switches stabilized at about 1 per second. 

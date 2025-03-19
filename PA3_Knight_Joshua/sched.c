@@ -12,7 +12,6 @@
 #include "print_progress.c"
 
 
-
 typedef struct _thread_data_t { 
     int localTid;
     const int *data;
@@ -20,8 +19,6 @@ typedef struct _thread_data_t {
     pthread_mutex_t *lock;
     long long int *totalSum;
 } thread_data_t;
-
-
 
 void* arraySum(void* void_data)
 {
@@ -63,8 +60,6 @@ void* arraySum(void* void_data)
 
     return data->totalSum;
 }
-
-
 
 int main(int argc, char* argv[])
 {
