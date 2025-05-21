@@ -1,4 +1,4 @@
-# Principles of Operating Systems - CS 446
+# Principles of Operating Systems - CS 446 (2025)
 
 This holds the course content for CS 446, I have been working mostly in advance for this course, since all of the assignments have been posted prior to them being assigned.
 
